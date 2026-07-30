@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(npx drizzle-kit:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(curl -s http://localhost:5173/ -o /dev/null -w \"%{http_code}\")"
+    ]
+  }
+}

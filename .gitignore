@@ -38,5 +38,8 @@ coverage/
 # Vite
 .vite/
 
+# Turbo
+.turbo/
+
 # Misc
 *.local
