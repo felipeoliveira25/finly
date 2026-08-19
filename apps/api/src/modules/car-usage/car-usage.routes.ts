@@ -19,6 +19,16 @@ router.get('/trips', controller.getTrips)
 router.post('/trips', controller.createTrip)
 router.delete('/trips/:id', controller.deleteTrip)
 
+// Parking fees
+router.get('/parking-fees', controller.getParkingFees)
+router.post('/parking-fees', controller.createParkingFee)
+router.delete('/parking-fees/:id', controller.deleteParkingFee)
+
+// Fuel refills
+router.get('/fuel-refills', controller.getFuelRefills)
+router.post('/fuel-refills', controller.createFuelRefill)
+router.delete('/fuel-refills/:id', controller.deleteFuelRefill)
+
 // Periods
 router.get('/periods', controller.getPeriods)
 router.post('/periods', controller.createPeriod)

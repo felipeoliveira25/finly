@@ -51,6 +51,8 @@ export function hydrateReimbursementPeriod(dto: ReimbursementPeriodDTO): Reimbur
     endDate: dto.endDate,
     totalKmMeters: dto.totalKmMeters,
     totalCostCents: dto.totalCostCents,
+    totalParkingCents: dto.totalParkingCents,
+    totalFuelRefillCents: dto.totalFuelRefillCents,
     closedAt: dto.closedAt,
     createdAt: dto.createdAt,
   }

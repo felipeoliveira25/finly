@@ -114,6 +114,70 @@ export async function deleteTrip(req: Request, res: Response): Promise<void> {
   }
 }
 
+// --- PARKING FEES ---
+
+export async function getParkingFees(req: Request, res: Response): Promise<void> {
+  try {
+    const startDate = typeof req.query.startDate === 'string' ? req.query.startDate : undefined
+    const endDate = typeof req.query.endDate === 'string' ? req.query.endDate : undefined
+    const result = await service.listParkingFees({ startDate, endDate })
+    res.status(200).json(result)
+  } catch (err) {
+    handleError(err, res)
+  }
+}
+
+export async function createParkingFee(req: Request, res: Response): Promise<void> {
+  try {
+    const result = await service.addParkingFee(req.body)
+    res.status(201).json(result)
+  } catch (err) {
+    handleError(err, res)
+  }
+}
+
+export async function deleteParkingFee(req: Request, res: Response): Promise<void> {
+  try {
+    const id = Number(req.params.id)
+    await service.deleteParkingFee(id)
+    res.status(204).send()
+  } catch (err) {
+    handleError(err, res)
+  }
+}
+
+// --- FUEL REFILLS ---
+
+export async function getFuelRefills(req: Request, res: Response): Promise<void> {
+  try {
+    const startDate = typeof req.query.startDate === 'string' ? req.query.startDate : undefined
+    const endDate = typeof req.query.endDate === 'string' ? req.query.endDate : undefined
+    const result = await service.listFuelRefills({ startDate, endDate })
+    res.status(200).json(result)
+  } catch (err) {
+    handleError(err, res)
+  }
+}
+
+export async function createFuelRefill(req: Request, res: Response): Promise<void> {
+  try {
+    const result = await service.addFuelRefill(req.body)
+    res.status(201).json(result)
+  } catch (err) {
+    handleError(err, res)
+  }
+}
+
+export async function deleteFuelRefill(req: Request, res: Response): Promise<void> {
+  try {
+    const id = Number(req.params.id)
+    await service.deleteFuelRefill(id)
+    res.status(204).send()
+  } catch (err) {
+    handleError(err, res)
+  }
+}
+
 // --- PERIODS ---
 
 export async function getPeriods(_req: Request, res: Response): Promise<void> {

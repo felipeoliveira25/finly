@@ -6,7 +6,9 @@ export interface ReimbursementPeriod {
   startDate: string
   endDate: string
   totalKmMeters: number
-  totalCostCents: number
+  totalCostCents: number       // total líquido: trajetos + estacionamento - abastecimento
+  totalParkingCents: number
+  totalFuelRefillCents: number
   closedAt: string
   createdAt: string
 }

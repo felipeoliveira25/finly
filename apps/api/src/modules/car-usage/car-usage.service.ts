@@ -6,6 +6,10 @@ import type {
   UpdateFixedRouteDTO,
   CarTripDTO,
   CreateCarTripDTO,
+  ParkingFeeDTO,
+  CreateParkingFeeDTO,
+  FuelRefillDTO,
+  CreateFuelRefillDTO,
   ReimbursementPeriodDTO,
   ClosePeriodDTO,
   CarUsageReportDTO,
@@ -31,6 +35,18 @@ import {
   dbCreatePeriod,
   dbAssignTripsToPeriod,
   dbFindTripsInRange,
+  dbFindParkingFees,
+  dbFindParkingFeeById,
+  dbCreateParkingFee,
+  dbDeleteParkingFee,
+  dbFindParkingFeesInRange,
+  dbAssignParkingFeesToPeriod,
+  dbFindFuelRefills,
+  dbFindFuelRefillById,
+  dbCreateFuelRefill,
+  dbDeleteFuelRefill,
+  dbFindFuelRefillsInRange,
+  dbAssignFuelRefillsToPeriod,
 } from './car-usage.repository'
 
 // --- Mapper helpers ---
@@ -39,6 +55,8 @@ type ConfigRow = Awaited<ReturnType<typeof dbFindAllConfigs>>[number]
 type FixedRouteRow = Awaited<ReturnType<typeof dbFindAllFixedRoutes>>[number]
 type PeriodRow = Awaited<ReturnType<typeof dbFindAllPeriods>>[number]
 type TripWithRoute = Awaited<ReturnType<typeof dbFindTrips>>[number]
+type ParkingFeeRow = Awaited<ReturnType<typeof dbFindParkingFees>>[number]
+type FuelRefillRow = Awaited<ReturnType<typeof dbFindFuelRefills>>[number]
 
 function toConfigDTO(row: ConfigRow): CarUsageConfigDTO {
   return {
@@ -76,6 +94,28 @@ function toTripDTO(row: TripWithRoute): CarTripDTO {
   }
 }
 
+function toParkingFeeDTO(row: ParkingFeeRow): ParkingFeeDTO {
+  return {
+    id: row.id,
+    date: row.date,
+    amountCents: row.amountCents,
+    description: row.description ?? null,
+    periodId: row.periodId ?? null,
+    createdAt: row.createdAt,
+  }
+}
+
+function toFuelRefillDTO(row: FuelRefillRow): FuelRefillDTO {
+  return {
+    id: row.id,
+    date: row.date,
+    amountCents: row.amountCents,
+    description: row.description ?? null,
+    periodId: row.periodId ?? null,
+    createdAt: row.createdAt,
+  }
+}
+
 function toPeriodDTO(row: PeriodRow): ReimbursementPeriodDTO {
   return {
     id: row.id,
@@ -84,6 +124,8 @@ function toPeriodDTO(row: PeriodRow): ReimbursementPeriodDTO {
     endDate: row.endDate,
     totalKmMeters: row.totalKmMeters,
     totalCostCents: row.totalCostCents,
+    totalParkingCents: row.totalParkingCents ?? 0,
+    totalFuelRefillCents: row.totalFuelRefillCents ?? 0,
     closedAt: row.closedAt,
     createdAt: row.createdAt,
   }
@@ -239,17 +281,100 @@ export async function registerTrip(dto: CreateCarTripDTO): Promise<CarTripDTO> {
 }
 
 export async function deleteTrip(id: number): Promise<void> {
-  // 1. Busca o trip
   const trip = await dbFindTripById(id)
   if (!trip) {
     throw new AppError('Registro não encontrado', 404)
   }
-  // 2. Verifica se pertence a período fechado
   if (trip.periodId !== null) {
     throw new AppError('Registro pertence a período fechado', 409)
   }
-  // 3. Deleta
   await dbDeleteTrip(id)
+}
+
+// --- PARKING FEES ---
+
+export async function listParkingFees(filters: {
+  startDate?: string
+  endDate?: string
+}): Promise<ParkingFeeDTO[]> {
+  const rows = await dbFindParkingFees(filters)
+  return rows.map(toParkingFeeDTO)
+}
+
+export async function addParkingFee(dto: CreateParkingFeeDTO): Promise<ParkingFeeDTO> {
+  if (dto.amountCents <= 0) {
+    throw new AppError('amountCents deve ser maior que zero', 400)
+  }
+  if (!dto.date || !/^\d{4}-\d{2}-\d{2}$/.test(dto.date)) {
+    throw new AppError('date deve ser uma data válida no formato YYYY-MM-DD', 400)
+  }
+
+  const period = await dbFindPeriodContainingDate(dto.date)
+  if (period) {
+    throw new AppError('Data pertence a período fechado', 409)
+  }
+
+  const row = await dbCreateParkingFee({
+    date: dto.date,
+    amountCents: dto.amountCents,
+    description: dto.description ?? null,
+    createdAt: new Date().toISOString(),
+  })
+  return toParkingFeeDTO(row)
+}
+
+export async function deleteParkingFee(id: number): Promise<void> {
+  const row = await dbFindParkingFeeById(id)
+  if (!row) {
+    throw new AppError('Estacionamento não encontrado', 404)
+  }
+  if (row.periodId !== null) {
+    throw new AppError('Registro pertence a período fechado', 409)
+  }
+  await dbDeleteParkingFee(id)
+}
+
+// --- FUEL REFILLS ---
+
+export async function listFuelRefills(filters: {
+  startDate?: string
+  endDate?: string
+}): Promise<FuelRefillDTO[]> {
+  const rows = await dbFindFuelRefills(filters)
+  return rows.map(toFuelRefillDTO)
+}
+
+export async function addFuelRefill(dto: CreateFuelRefillDTO): Promise<FuelRefillDTO> {
+  if (dto.amountCents <= 0) {
+    throw new AppError('amountCents deve ser maior que zero', 400)
+  }
+  if (!dto.date || !/^\d{4}-\d{2}-\d{2}$/.test(dto.date)) {
+    throw new AppError('date deve ser uma data válida no formato YYYY-MM-DD', 400)
+  }
+
+  const period = await dbFindPeriodContainingDate(dto.date)
+  if (period) {
+    throw new AppError('Data pertence a período fechado', 409)
+  }
+
+  const row = await dbCreateFuelRefill({
+    date: dto.date,
+    amountCents: dto.amountCents,
+    description: dto.description ?? null,
+    createdAt: new Date().toISOString(),
+  })
+  return toFuelRefillDTO(row)
+}
+
+export async function deleteFuelRefill(id: number): Promise<void> {
+  const row = await dbFindFuelRefillById(id)
+  if (!row) {
+    throw new AppError('Abastecimento não encontrado', 404)
+  }
+  if (row.periodId !== null) {
+    throw new AppError('Registro pertence a período fechado', 409)
+  }
+  await dbDeleteFuelRefill(id)
 }
 
 // --- PERIODS ---
@@ -274,10 +399,19 @@ export async function getPeriodById(
 }
 
 export async function closePeriod(dto: ClosePeriodDTO): Promise<ReimbursementPeriodDTO> {
-  // 1. Busca trips no range para calcular totais
-  const tripRows = await dbFindTripsInRange(dto.startDate, dto.endDate)
+  // 1. Busca todos os dados do período para calcular totais
+  const [tripRows, parkingRows, fuelRows] = await Promise.all([
+    dbFindTripsInRange(dto.startDate, dto.endDate),
+    dbFindParkingFeesInRange(dto.startDate, dto.endDate),
+    dbFindFuelRefillsInRange(dto.startDate, dto.endDate),
+  ])
+
   const totalKmMeters = tripRows.reduce((acc, t) => acc + t.distanceMeters, 0)
-  const totalCostCents = tripRows.reduce((acc, t) => acc + t.costCents, 0)
+  const totalTripCostCents = tripRows.reduce((acc, t) => acc + t.costCents, 0)
+  const totalParkingCents = parkingRows.reduce((acc, p) => acc + p.amountCents, 0)
+  const totalFuelRefillCents = fuelRows.reduce((acc, f) => acc + f.amountCents, 0)
+  // Total líquido: o usuário deve ao pai trajetos + estacionamentos, mas descontam os abastecimentos já pagos
+  const totalCostCents = totalTripCostCents + totalParkingCents - totalFuelRefillCents
 
   const now = new Date().toISOString()
 
@@ -288,14 +422,19 @@ export async function closePeriod(dto: ClosePeriodDTO): Promise<ReimbursementPer
     endDate: dto.endDate,
     totalKmMeters,
     totalCostCents,
+    totalParkingCents,
+    totalFuelRefillCents,
     closedAt: now,
     createdAt: now,
   })
 
-  // 3. Atualiza os trips com o period_id
-  await dbAssignTripsToPeriod(period.id, dto.startDate, dto.endDate)
+  // 3. Atualiza trips, estacionamentos e abastecimentos com o period_id
+  await Promise.all([
+    dbAssignTripsToPeriod(period.id, dto.startDate, dto.endDate),
+    dbAssignParkingFeesToPeriod(period.id, dto.startDate, dto.endDate),
+    dbAssignFuelRefillsToPeriod(period.id, dto.startDate, dto.endDate),
+  ])
 
-  // 4. Retorna o período criado
   return toPeriodDTO(period)
 }
 
@@ -305,34 +444,59 @@ export async function getReport(
   startDate: string,
   endDate: string,
 ): Promise<CarUsageReportDTO> {
-  const tripRows = await dbFindTripsInRange(startDate, endDate)
+  const [tripRows, parkingRows, fuelRows] = await Promise.all([
+    dbFindTripsInRange(startDate, endDate),
+    dbFindParkingFeesInRange(startDate, endDate),
+    dbFindFuelRefillsInRange(startDate, endDate),
+  ])
+
   const trips = tripRows.map(toTripDTO)
+  const parking = parkingRows.map(toParkingFeeDTO)
+  const fuel = fuelRows.map(toFuelRefillDTO)
 
-  // Agrupa por dia
-  const dayMap = new Map<string, CarTripDTO[]>()
-  for (const trip of trips) {
-    const existing = dayMap.get(trip.date)
-    if (existing) {
-      existing.push(trip)
-    } else {
-      dayMap.set(trip.date, [trip])
-    }
-  }
+  // Coleta todas as datas únicas presentes em qualquer um dos três conjuntos
+  const allDates = new Set<string>([
+    ...trips.map((t) => t.date),
+    ...parking.map((p) => p.date),
+    ...fuel.map((f) => f.date),
+  ])
 
-  const days: CarUsageDayBreakdownDTO[] = Array.from(dayMap.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, dayTrips]) => ({
-      date,
-      trips: dayTrips,
-      totalKmMeters: dayTrips.reduce((acc, t) => acc + t.distanceMeters, 0),
-      totalCostCents: dayTrips.reduce((acc, t) => acc + t.costCents, 0),
-    }))
+  const days: CarUsageDayBreakdownDTO[] = Array.from(allDates)
+    .sort()
+    .map((date) => {
+      const dayTrips = trips.filter((t) => t.date === date)
+      const dayParking = parking.filter((p) => p.date === date)
+      const dayFuel = fuel.filter((f) => f.date === date)
+
+      const totalKmMeters = dayTrips.reduce((acc, t) => acc + t.distanceMeters, 0)
+      const totalTripCost = dayTrips.reduce((acc, t) => acc + t.costCents, 0)
+      const totalParkingCents = dayParking.reduce((acc, p) => acc + p.amountCents, 0)
+      const totalFuelRefillCents = dayFuel.reduce((acc, f) => acc + f.amountCents, 0)
+
+      return {
+        date,
+        trips: dayTrips,
+        parkingFees: dayParking,
+        fuelRefills: dayFuel,
+        totalKmMeters,
+        totalCostCents: totalTripCost + totalParkingCents - totalFuelRefillCents,
+        totalParkingCents,
+        totalFuelRefillCents,
+      }
+    })
+
+  const totalKmMeters = trips.reduce((acc, t) => acc + t.distanceMeters, 0)
+  const totalTripCost = trips.reduce((acc, t) => acc + t.costCents, 0)
+  const totalParkingCents = parking.reduce((acc, p) => acc + p.amountCents, 0)
+  const totalFuelRefillCents = fuel.reduce((acc, f) => acc + f.amountCents, 0)
 
   return {
     startDate,
     endDate,
-    totalKmMeters: trips.reduce((acc, t) => acc + t.distanceMeters, 0),
-    totalCostCents: trips.reduce((acc, t) => acc + t.costCents, 0),
+    totalKmMeters,
+    totalCostCents: totalTripCost + totalParkingCents - totalFuelRefillCents,
+    totalParkingCents,
+    totalFuelRefillCents,
     days,
   }
 }

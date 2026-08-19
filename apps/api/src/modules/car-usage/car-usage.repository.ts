@@ -1,11 +1,20 @@
 import { eq, lte, gte, and, isNull, desc, asc, getTableColumns } from 'drizzle-orm'
 import { db } from '../../db/client'
-import { carUsageConfigs, fixedRoutes, carTrips, reimbursementPeriods } from '../../db/schema'
+import {
+  carUsageConfigs,
+  fixedRoutes,
+  carTrips,
+  reimbursementPeriods,
+  parkingFees,
+  fuelRefills,
+} from '../../db/schema'
 
 type ConfigRow = typeof carUsageConfigs.$inferSelect
 type FixedRouteRow = typeof fixedRoutes.$inferSelect
 type PeriodRow = typeof reimbursementPeriods.$inferSelect
 type TripRow = typeof carTrips.$inferSelect
+type ParkingFeeRow = typeof parkingFees.$inferSelect
+type FuelRefillRow = typeof fuelRefills.$inferSelect
 
 // Para trips com nome do trajeto fixo (resultado de join)
 type TripWithRoute = TripRow & { fixedRouteName: string | null }
@@ -179,6 +188,8 @@ export async function dbCreatePeriod(data: {
   endDate: string
   totalKmMeters: number
   totalCostCents: number
+  totalParkingCents: number
+  totalFuelRefillCents: number
   closedAt: string
   createdAt: string
 }): Promise<PeriodRow> {
@@ -218,4 +229,132 @@ export async function dbFindTripsInRange(
     .orderBy(asc(carTrips.date), asc(carTrips.createdAt))
 
   return rows.map((r) => ({ ...r, fixedRouteName: r.fixedRouteName ?? null }))
+}
+
+// PARKING FEES
+
+export async function dbFindParkingFees(filters: {
+  startDate?: string
+  endDate?: string
+}): Promise<ParkingFeeRow[]> {
+  const conditions = []
+  if (filters.startDate) conditions.push(gte(parkingFees.date, filters.startDate))
+  if (filters.endDate) conditions.push(lte(parkingFees.date, filters.endDate))
+
+  return db
+    .select()
+    .from(parkingFees)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(asc(parkingFees.date), asc(parkingFees.createdAt))
+}
+
+export async function dbFindParkingFeeById(id: number): Promise<ParkingFeeRow | null> {
+  const rows = await db.select().from(parkingFees).where(eq(parkingFees.id, id))
+  return rows[0] ?? null
+}
+
+export async function dbCreateParkingFee(data: {
+  date: string
+  amountCents: number
+  description: string | null
+  createdAt: string
+}): Promise<ParkingFeeRow> {
+  const [row] = await db.insert(parkingFees).values(data).returning()
+  return row
+}
+
+export async function dbDeleteParkingFee(id: number): Promise<void> {
+  await db.delete(parkingFees).where(eq(parkingFees.id, id))
+}
+
+export async function dbFindParkingFeesInRange(
+  startDate: string,
+  endDate: string,
+): Promise<ParkingFeeRow[]> {
+  return db
+    .select()
+    .from(parkingFees)
+    .where(and(gte(parkingFees.date, startDate), lte(parkingFees.date, endDate)))
+    .orderBy(asc(parkingFees.date), asc(parkingFees.createdAt))
+}
+
+export async function dbAssignParkingFeesToPeriod(
+  periodId: number,
+  startDate: string,
+  endDate: string,
+): Promise<void> {
+  await db
+    .update(parkingFees)
+    .set({ periodId })
+    .where(
+      and(
+        gte(parkingFees.date, startDate),
+        lte(parkingFees.date, endDate),
+        isNull(parkingFees.periodId),
+      ),
+    )
+}
+
+// FUEL REFILLS
+
+export async function dbFindFuelRefills(filters: {
+  startDate?: string
+  endDate?: string
+}): Promise<FuelRefillRow[]> {
+  const conditions = []
+  if (filters.startDate) conditions.push(gte(fuelRefills.date, filters.startDate))
+  if (filters.endDate) conditions.push(lte(fuelRefills.date, filters.endDate))
+
+  return db
+    .select()
+    .from(fuelRefills)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(asc(fuelRefills.date), asc(fuelRefills.createdAt))
+}
+
+export async function dbFindFuelRefillById(id: number): Promise<FuelRefillRow | null> {
+  const rows = await db.select().from(fuelRefills).where(eq(fuelRefills.id, id))
+  return rows[0] ?? null
+}
+
+export async function dbCreateFuelRefill(data: {
+  date: string
+  amountCents: number
+  description: string | null
+  createdAt: string
+}): Promise<FuelRefillRow> {
+  const [row] = await db.insert(fuelRefills).values(data).returning()
+  return row
+}
+
+export async function dbDeleteFuelRefill(id: number): Promise<void> {
+  await db.delete(fuelRefills).where(eq(fuelRefills.id, id))
+}
+
+export async function dbFindFuelRefillsInRange(
+  startDate: string,
+  endDate: string,
+): Promise<FuelRefillRow[]> {
+  return db
+    .select()
+    .from(fuelRefills)
+    .where(and(gte(fuelRefills.date, startDate), lte(fuelRefills.date, endDate)))
+    .orderBy(asc(fuelRefills.date), asc(fuelRefills.createdAt))
+}
+
+export async function dbAssignFuelRefillsToPeriod(
+  periodId: number,
+  startDate: string,
+  endDate: string,
+): Promise<void> {
+  await db
+    .update(fuelRefills)
+    .set({ periodId })
+    .where(
+      and(
+        gte(fuelRefills.date, startDate),
+        lte(fuelRefills.date, endDate),
+        isNull(fuelRefills.periodId),
+      ),
+    )
 }

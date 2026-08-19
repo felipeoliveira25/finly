@@ -26,8 +26,10 @@ export const reimbursementPeriods = sqliteTable('reimbursement_periods', {
   label: text('label').notNull(),           // ex: "Julho 2025"
   startDate: text('start_date').notNull(),  // 'YYYY-MM-DD'
   endDate: text('end_date').notNull(),      // 'YYYY-MM-DD'
-  totalKmMeters: integer('total_km_meters').notNull(),  // denormalizado ao fechar
-  totalCostCents: integer('total_cost_cents').notNull(), // denormalizado ao fechar
+  totalKmMeters: integer('total_km_meters').notNull(),      // denormalizado ao fechar
+  totalCostCents: integer('total_cost_cents').notNull(),    // total líquido: trajetos + estacionamento - abastecimento
+  totalParkingCents: integer('total_parking_cents').notNull().default(0),      // soma dos estacionamentos
+  totalFuelRefillCents: integer('total_fuel_refill_cents').notNull().default(0), // soma dos abastecimentos pagos pelo usuário
   closedAt: text('closed_at').notNull(),    // timestamp do fechamento (UTC ISO 8601)
   createdAt: text('created_at').notNull(),
 })
@@ -74,6 +76,102 @@ export const transactions = sqliteTable('transactions', {
   isConfirmed: integer('is_confirmed', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
+})
+
+// Estacionamentos debitados pelo Sem Parar (somam ao reembolso)
+export const parkingFees = sqliteTable('parking_fees', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  date: text('date').notNull(),                          // 'YYYY-MM-DD'
+  amountCents: integer('amount_cents').notNull(),        // valor em centavos
+  description: text('description'),                      // ex: "Shopping RioMar"
+  periodId: integer('period_id').references(() => reimbursementPeriods.id),
+  createdAt: text('created_at').notNull(),
+})
+
+// Abastecimentos pagos pelo usuário no próprio cartão (subtraem do reembolso)
+export const fuelRefills = sqliteTable('fuel_refills', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  date: text('date').notNull(),                          // 'YYYY-MM-DD'
+  amountCents: integer('amount_cents').notNull(),        // valor total pago
+  description: text('description'),                      // ex: "Posto Ipiranga"
+  periodId: integer('period_id').references(() => reimbursementPeriods.id),
+  createdAt: text('created_at').notNull(),
+})
+
+// ─── Car Usage ───────────────────────────────────────────────────────────────
+
+// ─── Investments ─────────────────────────────────────────────────────────────
+
+export const stockPositions = sqliteTable('stock_positions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  ticker: text('ticker').notNull().unique(),
+  quantity: integer('quantity').notNull(),
+  avgPriceCents: integer('avg_price_cents').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+})
+
+export const stockPurchases = sqliteTable('stock_purchases', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  ticker: text('ticker').notNull(),
+  quantity: integer('quantity').notNull(),
+  unitPriceCents: integer('unit_price_cents').notNull(),
+  totalCostCents: integer('total_cost_cents').notNull(),
+  purchaseDate: text('purchase_date').notNull(),
+  createdAt: text('created_at').notNull(),
+})
+
+export const treasuryApplications = sqliteTable('treasury_applications', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  titleCode: text('title_code').notNull(),
+  maturityDate: text('maturity_date').notNull(),
+  investmentAmountCents: integer('investment_amount_cents').notNull(),
+  contractedRateBps: integer('contracted_rate_bps').notNull(),
+  purchaseDate: text('purchase_date').notNull(),
+  createdAt: text('created_at').notNull(),
+})
+
+export const treasuryRedemptions = sqliteTable('treasury_redemptions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  applicationId: integer('application_id').notNull().references(() => treasuryApplications.id),
+  redeemedAmountCents: integer('redeemed_amount_cents').notNull(),
+  redemptionDate: text('redemption_date').notNull(),
+  createdAt: text('created_at').notNull(),
+})
+
+export const optionPositions = sqliteTable('option_positions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  underlyingAsset: text('underlying_asset').notNull(),
+  optionType: text('option_type').notNull(),
+  strategyLabel: text('strategy_label'),
+  quantity: integer('quantity').notNull(),
+  premiumReceivedCents: integer('premium_received_cents').notNull(),
+  strikeCents: integer('strike_cents').notNull(),
+  breakevenCents: integer('breakeven_cents').notNull(),
+  popBps: integer('pop_bps').notNull(),
+  expiryDate: text('expiry_date').notNull(),
+  isActive: integer('is_active').notNull().default(1),
+  createdAt: text('created_at').notNull(),
+  closedAt: text('closed_at'),
+})
+
+export const portfolioSnapshots = sqliteTable('portfolio_snapshots', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  snapshotDate: text('snapshot_date').notNull().unique(),
+  stocksValueCents: integer('stocks_value_cents').notNull(),
+  treasuryValueCents: integer('treasury_value_cents').notNull(),
+  totalValueCents: integer('total_value_cents').notNull(),
+  dataSource: text('data_source').notNull().default('cron'),
+  createdAt: text('created_at').notNull(),
+})
+
+export const cronRuns = sqliteTable('cron_runs', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  jobName: text('job_name').notNull(),
+  ranAt: text('ran_at').notNull(),
+  status: text('status').notNull(),
+  errorMsg: text('error_msg'),
+  createdAt: text('created_at').notNull(),
 })
 
 // ─── Car Usage ───────────────────────────────────────────────────────────────

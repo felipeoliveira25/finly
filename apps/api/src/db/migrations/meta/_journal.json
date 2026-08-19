@@ -15,6 +15,20 @@
       "when": 1785435718235,
       "tag": "0001_hesitant_ted_forrester",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1787097600000,
+      "tag": "0002_parking_fuel",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1787184000000,
+      "tag": "0003_investments",
+      "breakpoints": true
     }
   ]
 }

@@ -4,7 +4,11 @@ import { CarUsageNav } from '../../components/CarUsageNav/CarUsageNav'
 import { StatCard } from '../../components/StatCard/StatCard'
 import { TripCard } from '../../components/TripCard/TripCard'
 import { formatCurrency, formatKm, formatDate } from '../../utils/format'
+import { isParkingFeeLocked } from '../../../domain/parkingFee/model'
+import { isFuelRefillLocked } from '../../../domain/fuelRefill/model'
 import type { CarUsageDayBreakdown } from '../../../domain/carUsageReport/model'
+import type { ParkingFee } from '../../../domain/parkingFee/model'
+import type { FuelRefill } from '../../../domain/fuelRefill/model'
 
 export function ReportPage() {
   const {
@@ -85,13 +89,35 @@ export function ReportPage() {
           <>
             <div className="grid grid-cols-2 gap-3">
               <StatCard label="Total km" value={formatKm(report.totalKmMeters)} />
-              <StatCard label="Total R$" value={formatCurrency(report.totalCostCents)} variant="negative" />
+              <StatCard label="Total líquido" value={formatCurrency(report.totalCostCents)} variant="negative" />
             </div>
+
+            {/* Breakdown de estacionamento/abastecimento se houver */}
+            {(report.totalParkingCents > 0 || report.totalFuelRefillCents > 0) && (
+              <div className="bg-surface border border-border rounded-xl px-4 py-3 flex flex-col gap-1.5 text-xs text-text-secondary">
+                <div className="flex justify-between">
+                  <span>Trajetos</span>
+                  <span className="text-text-primary">{formatCurrency(report.totalCostCents - report.totalParkingCents + report.totalFuelRefillCents)}</span>
+                </div>
+                {report.totalParkingCents > 0 && (
+                  <div className="flex justify-between">
+                    <span>Estacionamento</span>
+                    <span className="text-text-primary">+ {formatCurrency(report.totalParkingCents)}</span>
+                  </div>
+                )}
+                {report.totalFuelRefillCents > 0 && (
+                  <div className="flex justify-between">
+                    <span>Abastecimento (seu cartão)</span>
+                    <span className="text-accent">− {formatCurrency(report.totalFuelRefillCents)}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Breakdown por dia */}
             {report.days.length === 0 ? (
               <p className="text-text-secondary text-sm text-center py-6 border border-dashed border-border rounded-xl">
-                Nenhum trajeto no período.
+                Nenhum registro no período.
               </p>
             ) : (
               <div className="flex flex-col gap-2">
@@ -160,6 +186,20 @@ export function ReportPage() {
                   <span className="text-accent text-sm">{formatKm(period.totalKmMeters)}</span>
                   <span className="text-accent-negative text-sm">{formatCurrency(period.totalCostCents)}</span>
                 </div>
+                {(period.totalParkingCents > 0 || period.totalFuelRefillCents > 0) && (
+                  <div className="flex flex-col gap-0.5 mt-1">
+                    {period.totalParkingCents > 0 && (
+                      <span className="text-text-secondary text-xs">
+                        Estacionamento: {formatCurrency(period.totalParkingCents)}
+                      </span>
+                    )}
+                    {period.totalFuelRefillCents > 0 && (
+                      <span className="text-text-secondary text-xs">
+                        Abastecimento: − {formatCurrency(period.totalFuelRefillCents)}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -180,6 +220,8 @@ function DayBreakdown({
   expanded: boolean
   onToggle: () => void
 }) {
+  const entryCount = day.trips.length + day.parkingFees.length + day.fuelRefills.length
+
   return (
     <div className="bg-surface border border-border rounded-xl overflow-hidden">
       <button
@@ -188,7 +230,7 @@ function DayBreakdown({
       >
         <div className="flex items-center gap-3">
           <span className="text-text-primary text-sm font-medium">{formatDate(day.date)}</span>
-          <span className="text-text-secondary text-xs">{day.trips.length} trajeto{day.trips.length !== 1 ? 's' : ''}</span>
+          <span className="text-text-secondary text-xs">{entryCount} registro{entryCount !== 1 ? 's' : ''}</span>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-accent-negative text-sm">{formatCurrency(day.totalCostCents)}</span>
@@ -205,8 +247,56 @@ function DayBreakdown({
           {day.trips.map((trip) => (
             <TripCard key={trip.id} trip={trip} />
           ))}
+          {day.parkingFees.map((fee) => (
+            <ReadOnlyParkingCard key={fee.id} fee={fee} />
+          ))}
+          {day.fuelRefills.map((refill) => (
+            <ReadOnlyFuelCard key={refill.id} refill={refill} />
+          ))}
         </div>
       )}
+    </div>
+  )
+}
+
+function ReadOnlyParkingCard({ fee }: { fee: ParkingFee }) {
+  return (
+    <div className="flex items-center justify-between bg-surface-elevated border border-border rounded-lg px-4 py-3">
+      <div className="flex flex-col gap-0.5 min-w-0">
+        <span className="text-text-primary text-sm font-medium truncate">
+          {fee.description ?? 'Estacionamento'}
+        </span>
+        <span className="text-text-secondary text-xs">Sem Parar</span>
+      </div>
+      <div className="flex items-center gap-3 shrink-0 ml-3">
+        <span className="text-accent-negative text-sm font-medium">{formatCurrency(fee.amountCents)}</span>
+        {isParkingFeeLocked(fee) && (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+          </svg>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ReadOnlyFuelCard({ refill }: { refill: FuelRefill }) {
+  return (
+    <div className="flex items-center justify-between bg-surface-elevated border border-border rounded-lg px-4 py-3">
+      <div className="flex flex-col gap-0.5 min-w-0">
+        <span className="text-text-primary text-sm font-medium truncate">
+          {refill.description ?? 'Abastecimento'}
+        </span>
+        <span className="text-text-secondary text-xs">Meu cartão</span>
+      </div>
+      <div className="flex items-center gap-3 shrink-0 ml-3">
+        <span className="text-accent text-sm font-medium">− {formatCurrency(refill.amountCents)}</span>
+        {isFuelRefillLocked(refill) && (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+          </svg>
+        )}
+      </div>
     </div>
   )
 }
