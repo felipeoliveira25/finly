@@ -6,6 +6,7 @@ export const ROUTES = {
   FINANCE: '/finance',
   FINANCE_TRANSACTIONS: '/finance/transactions',
   FINANCE_SETTINGS: '/finance/settings',
+  INVESTMENTS: '/investments',
 } as const
 
 export type Route = (typeof ROUTES)[keyof typeof ROUTES]

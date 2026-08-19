@@ -1,8 +1,11 @@
 import express from 'express'
 import type { HealthCheckResponse } from '@finly/shared-types'
 import { runMigrations } from './db/migrate'
+import { runInvestmentsSeed } from './db/seeds/investmentsSeed'
+import { registerJobs } from './jobs'
 import carUsageRouter from './modules/car-usage/car-usage.routes'
 import financeRouter from './modules/finance/finance.routes'
+import investmentsRouter from './modules/investments/investments.routes'
 
 const app = express()
 const PORT = process.env.PORT ?? 3001
@@ -18,6 +21,7 @@ app.use((_req, res, next) => {
 
 app.use('/car-usage', carUsageRouter)
 app.use('/finance', financeRouter)
+app.use('/investments', investmentsRouter)
 
 app.get('/health', (_req, res) => {
   const body: HealthCheckResponse = {
@@ -29,7 +33,9 @@ app.get('/health', (_req, res) => {
 })
 
 runMigrations()
-  .then(() => {
+  .then(async () => {
+    await runInvestmentsSeed()
+    registerJobs()
     app.listen(PORT, () => {
       console.log(`[api] Server running on http://localhost:${PORT}`)
     })

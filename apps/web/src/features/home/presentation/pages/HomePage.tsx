@@ -76,6 +76,9 @@ export function HomePage() {
           <Link to={ROUTES.FINANCE} className="text-accent-info hover:underline text-sm">
             Abrir Gestão Financeira →
           </Link>
+          <Link to={ROUTES.INVESTMENTS} className="text-text-secondary hover:underline text-sm">
+            Abrir Investimentos →
+          </Link>
         </div>
 
         {/* Rodapé */}

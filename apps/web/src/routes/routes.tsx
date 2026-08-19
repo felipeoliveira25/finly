@@ -5,6 +5,7 @@ import { ReportPage } from '@/features/car-usage/presentation/pages/ReportPage/R
 import { DashboardPage } from '@/features/finance/presentation/pages/DashboardPage/DashboardPage'
 import { TransactionsPage } from '@/features/finance/presentation/pages/TransactionsPage/TransactionsPage'
 import { SettingsPage as FinanceSettingsPage } from '@/features/finance/presentation/pages/SettingsPage/SettingsPage'
+import { DashboardPage as InvestmentsDashboardPage } from '@/features/investments/presentation/pages/DashboardPage/DashboardPage'
 import { ROUTES } from '@/shared/constants/routes'
 
 export const routes = [
@@ -15,4 +16,5 @@ export const routes = [
   { path: ROUTES.FINANCE, element: <DashboardPage /> },
   { path: ROUTES.FINANCE_TRANSACTIONS, element: <TransactionsPage /> },
   { path: ROUTES.FINANCE_SETTINGS, element: <FinanceSettingsPage /> },
+  { path: ROUTES.INVESTMENTS, element: <InvestmentsDashboardPage /> },
 ]
