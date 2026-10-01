@@ -211,7 +211,7 @@ export function generateCarUsagePdf(
       0: { cellWidth: 22, fontStyle: 'bold' },
       1: { cellWidth: 'auto' },
       2: { cellWidth: 22, halign: 'right' },
-      3: { cellWidth: 30, halign: 'right' },
+      3: { cellWidth: 42, halign: 'right' },
     },
     alternateRowStyles: { fillColor: [255, 255, 255] },
     didParseCell: (data) => {
