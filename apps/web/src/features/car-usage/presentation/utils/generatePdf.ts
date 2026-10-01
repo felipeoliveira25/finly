@@ -152,7 +152,7 @@ export function generateCarUsagePdf(
         { content: firstInDay ? dateLabel : '', styles: { fontStyle: 'bold', textColor: COLORS.text } },
         desc,
         km,
-        { content: value, styles: { textColor: valueColor === 'red' ? COLORS.negative : valueColor === 'green' ? COLORS.primary : COLORS.text, halign: 'right' } },
+        { content: value, styles: { textColor: valueColor === 'red' ? COLORS.negative : valueColor === 'green' ? COLORS.primary : COLORS.text } },
       ])
       firstInDay = false
     }
