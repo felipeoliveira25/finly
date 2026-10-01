@@ -113,7 +113,7 @@ export function generateCarUsagePdf(
     doc.setFontSize(9)
     doc.text('Abastecimento (meu cartão)', col1, sy)
     doc.setTextColor(...COLORS.primary)
-    doc.text(`− ${centsToBRL(report.totalFuelRefillCents)}`, col1 + 80, sy, { align: 'right' })
+    doc.text(`- ${centsToBRL(report.totalFuelRefillCents)}`, col1 + 80, sy, { align: 'right' })
     sy += 5
   }
 
@@ -163,13 +163,13 @@ export function generateCarUsagePdf(
     }
 
     for (const fee of day.parkingFees) {
-      const desc = fee.description ? `Estacionamento — ${fee.description}` : 'Estacionamento (Sem Parar)'
-      addRow(desc, '—', `+ ${centsToBRL(fee.amountCents)}`, 'red')
+      const desc = fee.description ? `Estacionamento - ${fee.description}` : 'Estacionamento (Sem Parar)'
+      addRow(desc, '-', `+ ${centsToBRL(fee.amountCents)}`, 'red')
     }
 
     for (const refill of day.fuelRefills) {
-      const desc = refill.description ? `Abastecimento — ${refill.description}` : 'Abastecimento (meu cartão)'
-      addRow(desc, '—', `− ${centsToBRL(refill.amountCents)}`, 'green')
+      const desc = refill.description ? `Abastecimento - ${refill.description}` : 'Abastecimento (meu cartao)'
+      addRow(desc, '-', `- ${centsToBRL(refill.amountCents)}`, 'green')
     }
 
     // Day subtotal row
@@ -239,7 +239,7 @@ export function generateCarUsagePdf(
     doc.setFontSize(8)
     doc.setTextColor(...COLORS.muted)
     doc.text(
-      `Finly — Página ${i} de ${pageCount}`,
+      `Finly - Pagina ${i} de ${pageCount}`,
       pageW / 2,
       pageH - 8,
       { align: 'center' },
