@@ -12,10 +12,13 @@ const PORT = process.env.PORT ?? 3001
 
 app.use(express.json())
 
+const CORS_ORIGIN = process.env.CORS_ORIGIN ?? 'http://localhost:5173'
+
 app.use((_req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173')
+  res.setHeader('Access-Control-Allow-Origin', CORS_ORIGIN)
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  if (_req.method === 'OPTIONS') { res.sendStatus(204); return }
   next()
 })
 
