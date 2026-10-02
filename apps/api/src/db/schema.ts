@@ -174,6 +174,21 @@ export const cronRuns = sqliteTable('cron_runs', {
   createdAt: text('created_at').notNull(),
 })
 
+// ─── Horizonte ───────────────────────────────────────────────────────────────
+
+// Gastos de viagem compartilhados (Eduarda & Felipe)
+// paid é JSON string: '[]' ou '[true, false, ...]' — um boolean por parcela
+export const tripExpenses = sqliteTable('trip_expenses', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  desc: text('desc').notNull(),
+  cat: text('cat').notNull(),
+  valorCents: integer('valor_cents').notNull(),
+  data: text('data').notNull(),           // 'YYYY-MM-DD' — data da 1ª parcela
+  parcelas: integer('parcelas').notNull().default(1),
+  paid: text('paid').notNull().default('[]'), // JSON string de boolean[]
+  createdAt: text('created_at').notNull(),
+})
+
 // ─── Car Usage ───────────────────────────────────────────────────────────────
 
 // Registros diários de uso — cada trajeto é uma linha

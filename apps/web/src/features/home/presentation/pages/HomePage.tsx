@@ -79,6 +79,9 @@ export function HomePage() {
           <Link to={ROUTES.INVESTMENTS} className="text-text-secondary hover:underline text-sm">
             Abrir Investimentos →
           </Link>
+          <Link to={ROUTES.HORIZONTE} className="text-accent hover:underline text-sm">
+            ✈ Abrir Horizonte · Gastos da viagem divididos entre dois →
+          </Link>
         </div>
 
         {/* Rodapé */}
